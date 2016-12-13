@@ -63,6 +63,7 @@ namespace PCMToAC3Live
             context.SampleRate = 44100;
             context.AudioCodingMode = AudioCodingMode.Front3Rear2;
             context.HasLfe = true;
+
             context.SampleFormat = A52SampleFormat.Float;
             enc = new FrameEncoderFloat(ref context);
 
@@ -95,7 +96,7 @@ namespace PCMToAC3Live
         private static void NStream_SingleBlockRead(object sender, SingleBlockReadEventArgs e)
         {
 
-            Console.WriteLine(String.Join (",",e.Samples.Select(x=>Math.Round(x,4).ToString())));
+            Console.WriteLine(String.Join(",", e.Samples.Select(x => Math.Round(x, 4).ToString())));
 
 
             if (queueBuf == null)
@@ -103,17 +104,20 @@ namespace PCMToAC3Live
                 queueBuf = new float[44100 * 6];
             }
 
-            for (int i = 0; i < e.Samples.Length; i++)
-            {
-                queueBuf[counter * e.Samples.Length + i] = e.Samples[i];
-            }
+
+            queueBuf[counter * e.Samples.Length] = e.Samples[0];
+            queueBuf[counter * e.Samples.Length + 1] = e.Samples[2];
+            queueBuf[counter * e.Samples.Length + 2] = e.Samples[1];
+            queueBuf[counter * e.Samples.Length + 3] = e.Samples[4];
+            queueBuf[counter * e.Samples.Length + 4] = e.Samples[5];
+            queueBuf[counter * e.Samples.Length + 5] = e.Samples[3];
             counter++;
             if (counter == 44100)
             {
                 sampleQueue.Enqueue(queueBuf);
                 queueBuf = null;
                 counter = 0;
-                
+
             }
 
             //fstream.Write( e.Samples.Select(x=>(byte) x).ToArray(), 0, 6);
