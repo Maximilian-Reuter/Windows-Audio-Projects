@@ -70,7 +70,6 @@ namespace PCMToAC3Live
             //_writer = new WaveWriter("test.ac3", final.WaveFormat);
 
 
-            File.Create("test.ac3").Close();
             capture.Start();
 
             //w = new WasapiOut();
@@ -89,7 +88,7 @@ namespace PCMToAC3Live
 
         private static void encoderThread()
         {
-            fstream = File.Open("test.ac3", FileMode.Append);
+            fstream = File.Open("test.ac3", FileMode.Create);
             int i = 0;
             while (true)
             {
@@ -98,7 +97,6 @@ namespace PCMToAC3Live
                     float[] samples = sampleQueue.Dequeue();
                     enc.Encode(samples, samples.Length / 6, (b, o, c) => fstream.Write(b, o, c));
                     if (i++ % 10 == 0) fstream.Flush();
-                    //enc.Flush(fstream);
                 }
             }
         }
