@@ -72,8 +72,16 @@ namespace PCMToAC3Live
 
             File.Create("test.ac3").Close();
             capture.Start();
+
+            //w = new WasapiOut();
+            //w.Device = (MMDevice)comboBox_Copy.SelectedItem;
+            //w.Initialize(new SoundInSource(capture) { FillWithZeros = true });
+            //w.Play();
+
+
             Task.Run(() => { encoderThread(); });
             //encodeSinus();
+
             Console.ReadLine();
 
             System.Environment.Exit(0);
@@ -81,18 +89,20 @@ namespace PCMToAC3Live
 
         private static void encoderThread()
         {
+            fstream = File.Open("test.ac3", FileMode.Append);
+            int i = 0;
             while (true)
             {
                 if (sampleQueue.Count > 0)
                 {
-                    fstream = File.Open("test.ac3", FileMode.Append);
                     float[] samples = sampleQueue.Dequeue();
-                    enc.Encode(samples, samples.Length / 6, fstream);
+                    enc.Encode(samples, samples.Length / 6, (b, o, c) => fstream.Write(b, o, c));
+                    if (i++ % 10 == 0) fstream.Flush();
                     //enc.Flush(fstream);
-                    fstream.Close();
                 }
             }
         }
+
         private static void NStream_SingleBlockRead(object sender, SingleBlockReadEventArgs e)
         {
 

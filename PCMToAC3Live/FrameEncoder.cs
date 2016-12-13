@@ -23,7 +23,8 @@ using System.Threading;
 
 namespace Aften
 {
-    #region FrameEncoder base class
+    public delegate void StreamWriteDelegate(byte[] buffer, int offset, int count);
+
 
     /// <summary>
     /// The Aften AC3 Encoder base class
@@ -130,47 +131,6 @@ namespace Aften
             GC.SuppressFinalize(this);
         }
 
-        #region Encoding
-
-        /// <summary>
-        /// Encodes the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <returns>MemoryStream containing the encoded frames</returns>
-        public MemoryStream Encode(Array samples)
-        {
-            this.CheckSamplesLength(samples);
-
-            return this.Encode(samples, samples.Length / m_nChannels);
-        }
-
-        /// <summary>
-        /// Encodes a part of the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="samplesPerChannelCount">The samples per channel count.</param>
-        /// <returns>
-        /// MemoryStream containing the encoded frames
-        /// </returns>
-        public MemoryStream Encode(Array samples, int samplesPerChannelCount)
-        {
-            MemoryStream stream = new MemoryStream();
-            this.Encode(samples, samplesPerChannelCount, stream);
-
-            return stream;
-        }
-
-        /// <summary>
-        /// Encodes the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="frames">The frames.</param>
-        public void Encode(Array samples, Stream frames)
-        {
-            this.CheckSamplesLength(samples);
-
-            this.Encode(samples, samples.Length / m_nChannels, frames);
-        }
 
         /// <summary>
         /// Encodes a part of the specified interleaved samples.
@@ -178,76 +138,7 @@ namespace Aften
         /// <param name="samples">The samples.</param>
         /// <param name="samplesPerChannelCount">The samples per channel count.</param>
         /// <param name="frames">The frames.</param>
-        public abstract void Encode(Array samples, int samplesPerChannelCount, Stream frames);
-
-        /// <summary>
-        /// Encodes the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <returns>
-        /// MemoryStream containing the encoded frames
-        /// </returns>
-        public MemoryStream Encode(Stream samples)
-        {
-            MemoryStream stream = new MemoryStream();
-            this.Encode(samples, stream);
-
-            return stream;
-        }
-
-        /// <summary>
-        /// Encodes the specified interleaved samples stream.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="frames">The frames.</param>
-        public abstract void Encode(Stream samples, Stream frames);
-
-        /// <summary>
-        /// Encodes the specified interleaved samples and flushes the encoder.  This instance needs to be disposed afterwards.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <returns>
-        /// MemoryStream containing the encoded frames
-        /// </returns>
-        public MemoryStream EncodeAndFlush(Stream samples)
-        {
-            MemoryStream stream = new MemoryStream();
-            this.EncodeAndFlush(samples, stream);
-
-            return stream;
-        }
-
-        /// <summary>
-        /// Encodes the specified interleaved samples stream and flushes the encoder.  This instance needs to be disposed afterwards.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="frames">The frames.</param>
-        public void EncodeAndFlush(Stream samples, Stream frames)
-        {
-            this.Encode(samples, frames);
-            if (!this.EncodingDone)
-                this.Flush(frames);
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Flushes the encoder und returns the remaining frames. This instance needs to be disposed afterwards.
-        /// </summary>
-        /// <returns>MemoryStream containing the encoded frames</returns>
-        public MemoryStream Flush()
-        {
-            MemoryStream stream = new MemoryStream();
-            this.Flush(stream);
-
-            return stream;
-        }
-
-        /// <summary>
-        /// Flushes the encoder und returns the remaining frames.  This instance needs to be disposed afterwards.
-        /// </summary>
-        /// <param name="frames">The frames.</param>
-        public abstract void Flush(Stream frames);
+        public abstract void Encode(Array samples, int samplesPerChannelCount, StreamWriteDelegate frames);
 
         /// <summary>
         /// Aborts the encoding. This instance needs to be disposed afterwards.
@@ -273,9 +164,7 @@ namespace Aften
         }
     }
 
-    #endregion
 
-    #region Strongly typed FrameEncoder class
 
     /// <summary>
     /// The Aften AC3 Encoder
@@ -330,7 +219,6 @@ namespace Aften
             aften_encode_close(ref m_Context);
         }
 
-        #region Encoding
 
         /// <summary>
         /// Encodes the frame.
@@ -364,59 +252,19 @@ namespace Aften
         /// <param name="samples">The samples.</param>
         /// <param name="samplesPerChannelCount">The samples per channel count.</param>
         /// <param name="frames">The frames.</param>
-        public override void Encode(Array samples, int samplesPerChannelCount, Stream frames)
+        public override void Encode(Array samples, int samplesPerChannelCount, StreamWriteDelegate frames)
         {
             TSample[] typedSamples = (TSample[])samples;
             this.Encode(typedSamples, samplesPerChannelCount, frames);
         }
 
         /// <summary>
-        /// Encodes the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <returns>MemoryStream containing the encoded frames</returns>
-        public MemoryStream Encode(TSample[] samples)
-        {
-            this.CheckSamplesLength(samples);
-
-            return this.Encode(samples, samples.Length / m_Context.Channels);
-        }
-
-        /// <summary>
-        /// Encodes a part of the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="samplesPerChannelCount">The samples per channel count.</param>
-        /// <returns>
-        /// MemoryStream containing the encoded frames
-        /// </returns>
-        public MemoryStream Encode(TSample[] samples, int samplesPerChannelCount)
-        {
-            MemoryStream stream = new MemoryStream();
-            this.Encode(samples, samplesPerChannelCount, stream);
-
-            return stream;
-        }
-
-        /// <summary>
-        /// Encodes the specified interleaved samples.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="frames">The frames.</param>
-        public void Encode(TSample[] samples, Stream frames)
-        {
-            this.CheckSamplesLength(samples);
-
-            this.Encode(samples, samples.Length / m_Context.Channels, frames);
-        }
-
-        /// <summary>
         /// Encodes a part of the specified interleaved samples.
         /// </summary>
         /// <param name="samples">The samples.</param>
         /// <param name="samplesPerChannelCount">The samples per channel count.</param>
         /// <param name="frames">The frames.</param>
-        public void Encode(TSample[] samples, int samplesPerChannelCount, Stream frames)
+        public void Encode(TSample[] samples, int samplesPerChannelCount, StreamWriteDelegate frames)
         {
             this.CheckEncodingState();
             int nSamplesCount = samplesPerChannelCount * m_Context.Channels;
@@ -437,7 +285,7 @@ namespace Aften
 
                 Buffer.BlockCopy(samples, nSamplesDone * m_nTSampleSize, m_Samples, nOffset * m_nTSampleSize, nSamplesNeeded * m_nTSampleSize);
                 int nSize = this.EncodeFrame(A52Sizes.SamplesPerFrame);
-                frames.Write(m_FrameBuffer, 0, nSize);
+                frames(m_FrameBuffer, 0, nSize);
                 nSamplesDone += m_nTotalSamplesPerFrame - nOffset;
                 nOffset = 0;
                 nSamplesNeeded = m_nTotalSamplesPerFrame;
@@ -447,57 +295,6 @@ namespace Aften
                 Buffer.BlockCopy(samples, nSamplesDone * m_nTSampleSize, m_Samples, 0, m_nRemainingSamplesCount * m_nTSampleSize);
         }
 
-        /// <summary>
-        /// Encodes the specified interleaved samples stream and flushes the encoder.
-        /// </summary>
-        /// <param name="samples">The samples.</param>
-        /// <param name="frames">The frames.</param>
-        public override void Encode(Stream samples, Stream frames)
-        {
-            this.CheckEncodingState();
-            if (!samples.CanRead)
-                throw new InvalidOperationException("Samples stream must be readable.");
-
-            int nOffset = 0;
-            int nCurrentRead;
-            while ((nCurrentRead = samples.Read(m_StreamBuffer, 0, m_nTSampleSize)) == m_nTSampleSize)
-            {
-                m_StreamSamples[nOffset] = m_ToTSample(m_StreamBuffer, 0);
-                ++nOffset;
-                if (nOffset == m_nTotalSamplesPerFrame)
-                {
-                    this.Encode(m_StreamSamples, frames);
-                    nOffset = 0;
-                    if (this.EncodingDone)
-                        return;
-                }
-            }
-            if ((nCurrentRead != 0) || (nOffset % m_Context.Channels != 0))
-                throw new InvalidOperationException(_EqualAmountOfSamples);
-
-            if (nOffset > 0)
-                this.Encode(m_StreamSamples, nOffset / m_Context.Channels, frames);
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Flushes the encoder und returns the remaining frames.  This instance needs to be disposed afterwards.
-        /// </summary>
-        /// <param name="frames">The frames.</param>
-        public override void Flush(Stream frames)
-        {
-            this.CheckEncodingState();
-            int nSize;
-            int nSamplesPerChannelCount = m_nRemainingSamplesCount / m_Context.Channels;
-            do
-            {
-                nSize = this.EncodeFrame(nSamplesPerChannelCount);
-                frames.Write(m_FrameBuffer, 0, nSize);
-                nSamplesPerChannelCount = 0;
-            } while (nSize > 0 || (m_bFedSamples && !m_bGotFrames));
-            this.EncodingDone = true;
-        }
 
         /// <summary>
         /// Aborts the encoding. This instance needs to be disposed afterwards.
@@ -556,9 +353,6 @@ namespace Aften
         }
     }
 
-    #endregion
-
-    #region Specific FrameEncoder classes
 
     /// <summary>
     /// The Aften AC3 Encoder for double precision floating point samples, normalized to [-1, 1]
@@ -732,5 +526,4 @@ namespace Aften
             : base(ref context, aften_encode_frame, BitConverter.ToInt32, A52SampleFormat.Int32) { }
     }
 
-    #endregion
 }
