@@ -60,10 +60,9 @@ namespace PCMToAC3Live
 
             EncodingContext context = FrameEncoder.GetDefaultsContext();
             context.Channels = 6;
-            context.SampleRate = 44100;
+            context.SampleRate = capture.WaveFormat.SampleRate;
             context.AudioCodingMode = AudioCodingMode.Front3Rear2;
             context.HasLfe = true;
-
             context.SampleFormat = A52SampleFormat.Float;
             enc = new FrameEncoderFloat(ref context);
 
@@ -96,12 +95,12 @@ namespace PCMToAC3Live
         private static void NStream_SingleBlockRead(object sender, SingleBlockReadEventArgs e)
         {
 
-            Console.WriteLine(String.Join(",", e.Samples.Select(x => Math.Round(x, 4).ToString())));
+            //Console.WriteLine(String.Join(",", e.Samples.Select(x => Math.Round(x, 4).ToString())));
 
 
             if (queueBuf == null)
             {
-                queueBuf = new float[44100 * 6];
+                queueBuf = new float[capture.WaveFormat.SampleRate * 6];
             }
 
 
@@ -112,7 +111,7 @@ namespace PCMToAC3Live
             queueBuf[counter * e.Samples.Length + 4] = e.Samples[5];
             queueBuf[counter * e.Samples.Length + 5] = e.Samples[3];
             counter++;
-            if (counter == 44100)
+            if (counter == capture.WaveFormat.SampleRate)
             {
                 sampleQueue.Enqueue(queueBuf);
                 queueBuf = null;
