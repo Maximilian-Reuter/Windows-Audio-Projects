@@ -20,6 +20,7 @@ namespace PCMToAC3Live
         private static WasapiCapture capture = null;
 
         private static WasapiOut w = null;
+        private static object encoderLock = new object();
 
         private static WriteableBufferingSource wBuffSrc = null;
 
