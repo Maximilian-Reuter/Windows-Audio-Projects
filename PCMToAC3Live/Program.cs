@@ -32,7 +32,7 @@ namespace PCMToAC3Live
         private static Queue<float[]> sampleQueue = new Queue<float[]>();
         private static float[] queueBuf;
 
-        static unsafe void Main(string[] args)
+        static void Main(string[] args)
 
         {
 
@@ -69,29 +69,38 @@ namespace PCMToAC3Live
             //_writer = new WaveWriter("test.ac3", final.WaveFormat);
 
 
-            File.Create("test.ac3").Close();
             capture.Start();
-            Task.Run(() => { encoderThread(); });
+
+            //w = new WasapiOut();
+            //w.Device = (MMDevice)comboBox_Copy.SelectedItem;
+            //w.Initialize(new SoundInSource(capture) { FillWithZeros = true });
+            //w.Play();
+
+
+            Task.Run(async () => await encoderThread());
             //encodeSinus();
+
             Console.ReadLine();
 
             System.Environment.Exit(0);
         }
 
-        private static void encoderThread()
+        private static async Task encoderThread()
         {
+            fstream = File.Open("test.ac3", FileMode.Create);
+            int i = 0;
             while (true)
             {
-                if (sampleQueue.Count > 0)
+                while (sampleQueue.Count > 0)
                 {
-                    fstream = File.Open("test.ac3", FileMode.Append);
                     float[] samples = sampleQueue.Dequeue();
-                    enc.Encode(samples, samples.Length / 6, fstream);
-                    //enc.Flush(fstream);
-                    fstream.Close();
+                    enc.Encode(samples, samples.Length / 6, (b, o, c) => fstream.Write(b, o, c));
+                    if (i++ % 10 == 0) fstream.Flush();
                 }
+                await Task.Delay(TimeSpan.FromSeconds(10));
             }
         }
+
         private static void NStream_SingleBlockRead(object sender, SingleBlockReadEventArgs e)
         {
 
