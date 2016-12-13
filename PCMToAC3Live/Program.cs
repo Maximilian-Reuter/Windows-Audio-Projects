@@ -73,11 +73,12 @@ namespace PCMToAC3Live
 
             capture.Start();
 
-            wBuffSrc= new WriteableBufferingSource(new WaveFormat(capture.WaveFormat.SampleRate, capture.WaveFormat.BitsPerSample, capture.WaveFormat.Channels, AudioEncoding.WAVE_FORMAT_DOLBY_AC3_SPDIF),(int) capture.WaveFormat.MillisecondsToBytes(20) );
+            wBuffSrc= new WriteableBufferingSource(new WaveFormat(capture.WaveFormat.SampleRate, capture.WaveFormat.BitsPerSample, capture.WaveFormat.Channels, AudioEncoding.),(int) capture.WaveFormat.MillisecondsToBytes(20) );
 
             w = new WasapiOut(false,AudioClientShareMode.Shared,20);
             
             w.Device = MMDeviceEnumerator.EnumerateDevices (DataFlow.Render ,DeviceState.Active ).Where(x=>x.FriendlyName.Contains("Digital")).Single();
+            AudioClient a = AudioClient.FromMMDevice(w.Device);
             w.Initialize(wBuffSrc);
             w.Play();
 
@@ -92,17 +93,17 @@ namespace PCMToAC3Live
 
         private static async Task encoderThread()
         {
-            fstream = File.Open("test.ac3", FileMode.Create);
-            int i = 0;
+            //fstream = File.Open("test.ac3", FileMode.Create);
+            
             while (true)
             {
                 while (sampleQueue.Count > 0)
                 {
                     float[] samples = sampleQueue.Dequeue();
-                    enc.Encode(samples, samples.Length / 6, (b, o, c) => fstream.Write(b, o, c));
-                    if (i++ % 10 == 0) fstream.Flush();
+                    enc.Encode(samples, samples.Length / 6, (b, o, c) => wBuffSrc.Write(b, o, c));
+                    //if (i++ % 10 == 0) fstream.Flush();
                 }
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromMilliseconds(20));
             }
         }
 
@@ -114,7 +115,7 @@ namespace PCMToAC3Live
 
             if (queueBuf == null)
             {
-                queueBuf = new float[capture.WaveFormat.SampleRate * 6];
+                queueBuf = new float[(capture.WaveFormat.SampleRate * 6 )/50];
             }
 
 
@@ -125,7 +126,7 @@ namespace PCMToAC3Live
             queueBuf[counter * e.Samples.Length + 4] = e.Samples[5];
             queueBuf[counter * e.Samples.Length + 5] = e.Samples[3];
             counter++;
-            if (counter == capture.WaveFormat.SampleRate)
+            if (counter ==(capture.WaveFormat.SampleRate / 50))
             {
                 sampleQueue.Enqueue(queueBuf);
                 queueBuf = null;
