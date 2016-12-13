@@ -73,9 +73,9 @@ namespace PCMToAC3Live
 
             capture.Start();
 
-            wBuffSrc= new WriteableBufferingSource(new WaveFormat(capture.WaveFormat.SampleRate, capture.WaveFormat.BitsPerSample, capture.WaveFormat.Channels, AudioEncoding.),(int) capture.WaveFormat.MillisecondsToBytes(20) );
+            wBuffSrc= new WriteableBufferingSource(new WaveFormat(capture.WaveFormat.SampleRate, capture.WaveFormat.BitsPerSample, capture.WaveFormat.Channels, AudioEncoding.WAVE_FORMAT_DOLBY_AC3_SPDIF),(int) capture.WaveFormat.MillisecondsToBytes(20) );
 
-            w = new WasapiOut(false,AudioClientShareMode.Shared,20);
+            w = new WasapiOut(false,AudioClientShareMode.Exclusive,20);
             
             w.Device = MMDeviceEnumerator.EnumerateDevices (DataFlow.Render ,DeviceState.Active ).Where(x=>x.FriendlyName.Contains("Digital")).Single();
             AudioClient a = AudioClient.FromMMDevice(w.Device);
