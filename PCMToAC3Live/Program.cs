@@ -63,6 +63,7 @@ namespace PCMToAC3Live
             context.SampleRate = 44100;
             context.AudioCodingMode = AudioCodingMode.Front3Rear2;
             context.HasLfe = true;
+            context.SampleFormat = A52SampleFormat.Float;
             enc = new FrameEncoderFloat(ref context);
 
             //_writer = new WaveWriter("test.ac3", final.WaveFormat);
@@ -72,8 +73,6 @@ namespace PCMToAC3Live
             capture.Start();
             Task.Run(() => { encoderThread(); });
             //encodeSinus();
-            Console.ReadLine();
-            Console.WriteLine(counter);
             Console.ReadLine();
 
             System.Environment.Exit(0);
@@ -95,7 +94,10 @@ namespace PCMToAC3Live
         }
         private static void NStream_SingleBlockRead(object sender, SingleBlockReadEventArgs e)
         {
-            
+
+            Console.WriteLine(String.Join (",",e.Samples.Select(x=>Math.Round(x,4).ToString())));
+
+
             if (queueBuf == null)
             {
                 queueBuf = new float[44100 * 6];
@@ -111,7 +113,7 @@ namespace PCMToAC3Live
                 sampleQueue.Enqueue(queueBuf);
                 queueBuf = null;
                 counter = 0;
-                Console.WriteLine(DateTime.Now);
+                
             }
 
             //fstream.Write( e.Samples.Select(x=>(byte) x).ToArray(), 0, 6);
