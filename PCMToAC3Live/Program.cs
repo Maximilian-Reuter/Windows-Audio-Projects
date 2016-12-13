@@ -21,6 +21,8 @@ namespace PCMToAC3Live
 
         private static WasapiOut w = null;
 
+        private static WriteableBufferingSource wBuffSrc = null;
+
         private static Stream fstream;
         private static byte[] fbuf;
         private static SingleBlockNotificationStream nStream;
@@ -71,10 +73,13 @@ namespace PCMToAC3Live
 
             capture.Start();
 
-            //w = new WasapiOut();
-            //w.Device = (MMDevice)comboBox_Copy.SelectedItem;
-            //w.Initialize(new SoundInSource(capture) { FillWithZeros = true });
-            //w.Play();
+            wBuffSrc= new WriteableBufferingSource(new WaveFormat(capture.WaveFormat.SampleRate, capture.WaveFormat.BitsPerSample, capture.WaveFormat.Channels, AudioEncoding.WAVE_FORMAT_DOLBY_AC3_SPDIF),(int) capture.WaveFormat.MillisecondsToBytes(20) );
+
+            w = new WasapiOut(false,AudioClientShareMode.Shared,20);
+            
+            w.Device = MMDeviceEnumerator.EnumerateDevices (DataFlow.Render ,DeviceState.Active ).Where(x=>x.FriendlyName.Contains("Digital")).Single();
+            w.Initialize(wBuffSrc);
+            w.Play();
 
 
             Task.Run(async () => await encoderThread());
