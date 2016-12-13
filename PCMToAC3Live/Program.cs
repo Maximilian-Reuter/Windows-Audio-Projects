@@ -32,7 +32,7 @@ namespace PCMToAC3Live
         private static Queue<float[]> sampleQueue = new Queue<float[]>();
         private static float[] queueBuf;
 
-        static unsafe void Main(string[] args)
+        static void Main(string[] args)
 
         {
 
@@ -78,7 +78,7 @@ namespace PCMToAC3Live
             //w.Play();
 
 
-            Task.Run(() => { encoderThread(); });
+            Task.Run(async () => await encoderThread());
             //encodeSinus();
 
             Console.ReadLine();
@@ -86,18 +86,19 @@ namespace PCMToAC3Live
             System.Environment.Exit(0);
         }
 
-        private static void encoderThread()
+        private static async Task encoderThread()
         {
             fstream = File.Open("test.ac3", FileMode.Create);
             int i = 0;
             while (true)
             {
-                if (sampleQueue.Count > 0)
+                while (sampleQueue.Count > 0)
                 {
                     float[] samples = sampleQueue.Dequeue();
                     enc.Encode(samples, samples.Length / 6, (b, o, c) => fstream.Write(b, o, c));
                     if (i++ % 10 == 0) fstream.Flush();
                 }
+                await Task.Delay(TimeSpan.FromSeconds(10));
             }
         }
 
